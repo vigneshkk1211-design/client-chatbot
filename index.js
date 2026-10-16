@@ -19,6 +19,30 @@ app.listen(PORT, () => {
 const userState = {};
 const ADMIN_NUMBER = '917200537033@s.whatsapp.net';
 
+// -------------------------------------------------------------
+// 1 MONTH TRIAL EXPIRY LOGIC (இன்றைய தேதியிலிருந்து 30 நாட்கள்)
+// -------------------------------------------------------------
+const TRIAL_CONFIG_PATH = path.join(__dirname, 'trial_config.json');
+
+function getTrialExpiryDate() {
+    let startDate;
+    const now = new Date();
+
+    if (fs.existsSync(TRIAL_CONFIG_PATH)) {
+        const data = JSON.parse(fs.readFileSync(TRIAL_CONFIG_PATH, 'utf8'));
+        startDate = new Date(data.startDate);
+    } else {
+        // முதல்முறை ரன் ஆகும்போது இன்றைய தேதியைத் தொடக்கமாக வைத்துக்கொள்வோம்
+        startDate = now;
+        fs.writeFileSync(TRIAL_CONFIG_PATH, JSON.stringify({ startDate: startDate.toISOString() }, null, 2));
+    }
+
+    // தொடக்க தேதியிலிருந்து சரியாக 30 நாட்கள் (1 மாதம்) கணக்கிடுதல்
+    const expiryDate = new Date(startDate);
+    expiryDate.setDate(expiryDate.getDate() + 30);
+    return expiryDate;
+}
+
 async function connectToWhatsApp() {
     console.log('WhatsApp inaippu thodangugirathu...');
 
@@ -72,6 +96,19 @@ async function connectToWhatsApp() {
         ).trim();
 
         if (sender.includes('@g.us')) return;
+
+        // -------------------------------------------------------------
+        // காலாவதி சோதனை (Check if 1 month trial is over)
+        // -------------------------------------------------------------
+        const expiryDate = getTrialExpiryDate();
+        const currentDate = new Date();
+
+        if (currentDate > expiryDate) {
+            // 30 நாட்கள் முடிந்துவிட்டால் பாட் வேலை செய்வதை நிறுத்திவிட்டு இந்தச் செய்தியை அனுப்பும்
+            const expiredMessage = `⚠️ *Free Trial Expired*\n\nஉங்களது 1 மாத இலவச சோதனை காலம் (Free Trial) நிறைவடைந்துவிட்டது. சேவையைப் continuar செய்ய டெவலப்பரைத் தொடர்பு கொள்ளவும்.\n\n📞 Contact Developer for Lifetime Extension.`;
+            await sock.sendMessage(sender, { text: expiredMessage });
+            return; // மற்ற எந்த மெசேஜும் வேலை செய்யாது
+        }
 
         const lowerText = text.toLowerCase();
 
@@ -132,7 +169,6 @@ async function connectToWhatsApp() {
             const caption = isTamil ?
                 `📺 *பொழுதுபோக்கு சாதனங்கள் – புதிய வெங்கலலட்சுமி ஏஜென்சீஸ்*\n• ஸ்மார்ட் டிவிகள் & எல்இடி தொலைக்காட்சிகள் (32" முதல் 75\"+ அல்ட்ரா எச்டி 4K, QLED)\n• முன்னணி பிராண்டுகள்: Samsung, LG, Sony, TCL\n✅ 0% வட்டி எளிமையான ஈஎம்ஐ மற்றும் இலவச வீட்டு விநியோகம்\n📞 *தொடர்புக்கு:* +91 99762 45000` :
                 `📺 *Entertainment Appliances – New Vengalakshmi Agencies*\n• Smart TVs & LED Televisions (32" to 75\"+ Ultra HD 4K, QLED)\n• Leading Brands: Samsung, LG, Sony, TCL\n✅ 0% Interest Easy EMIs & Free Home Delivery\n📞 *Contact:* +91 99762 45000`;
-            // இங்கே உங்கள் ஃபோல்டர் பெயரான Entertaiment கொடுக்கப்பட்டுள்ளது
             await sendImagesThenDescription('Entertaiment', caption);
             return;
         }
