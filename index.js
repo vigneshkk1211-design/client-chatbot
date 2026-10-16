@@ -17,11 +17,11 @@ app.listen(PORT, () => {
 });
 
 const userState = {};
-const ADMIN_NUMBER = '917200537033@s.whatsapp.net';
 
-// -------------------------------------------------------------
-// 1 MONTH TRIAL EXPIRY LOGIC (இன்றைய தேதியிலிருந்து 30 நாட்கள்)
-// -------------------------------------------------------------
+// Neenga kudutha puthu admin number (9976245000)
+const ADMIN_NUMBER = '919976245000@s.whatsapp.net';
+
+// 1 Month Trial Logic
 const TRIAL_CONFIG_PATH = path.join(__dirname, 'trial_config.json');
 
 function getTrialExpiryDate() {
@@ -32,12 +32,10 @@ function getTrialExpiryDate() {
         const data = JSON.parse(fs.readFileSync(TRIAL_CONFIG_PATH, 'utf8'));
         startDate = new Date(data.startDate);
     } else {
-        // முதல்முறை ரன் ஆகும்போது இன்றைய தேதியைத் தொடக்கமாக வைத்துக்கொள்வோம்
         startDate = now;
         fs.writeFileSync(TRIAL_CONFIG_PATH, JSON.stringify({ startDate: startDate.toISOString() }, null, 2));
     }
 
-    // தொடக்க தேதியிலிருந்து சரியாக 30 நாட்கள் (1 மாதம்) கணக்கிடுதல்
     const expiryDate = new Date(startDate);
     expiryDate.setDate(expiryDate.getDate() + 30);
     return expiryDate;
@@ -61,7 +59,7 @@ async function connectToWhatsApp() {
         const { connection, lastDisconnect, qr } = update;
 
         if (qr) {
-            console.log('Keele ulla QR code-ai ungal WhatsApp-il scan seyyungal:');
+            console.log('Keele ulla QR code-ai ungal WhatsApp-il scan seyyungal (Chatbot Number: 9585965003):');
             qrcode.generate(qr, { small: true });
         }
 
@@ -97,17 +95,14 @@ async function connectToWhatsApp() {
 
         if (sender.includes('@g.us')) return;
 
-        // -------------------------------------------------------------
-        // காலாவதி சோதனை (Check if 1 month trial is over)
-        // -------------------------------------------------------------
+        // Trial Expiry Check
         const expiryDate = getTrialExpiryDate();
         const currentDate = new Date();
 
         if (currentDate > expiryDate) {
-            // 30 நாட்கள் முடிந்துவிட்டால் பாட் வேலை செய்வதை நிறுத்திவிட்டு இந்தச் செய்தியை அனுப்பும்
-            const expiredMessage = `⚠️ *Free Trial Expired*\n\nஉங்களது 1 மாத இலவச சோதனை காலம் (Free Trial) நிறைவடைந்துவிட்டது. சேவையைப் continuar செய்ய டெவலப்பரைத் தொடர்பு கொள்ளவும்.\n\n📞 Contact Developer for Lifetime Extension.`;
+            const expiredMessage = `⚠️ *Free Trial Expired*\n\nUngalathu 1 matha free trial kaalam mudinthuவிட்டது. Sevaiyai thodarvatharku admin-ai thodarbu kollungal.`;
             await sock.sendMessage(sender, { text: expiredMessage });
-            return; // மற்ற எந்த மெசேஜும் வேலை செய்யாது
+            return;
         }
 
         const lowerText = text.toLowerCase();
@@ -251,6 +246,7 @@ async function connectToWhatsApp() {
                 `⚠️ *கவனம்:* வாடிக்கையாளர் ஒருவரிடமிருந்து சம்பந்தமில்லாத கேள்வி வந்துள்ளது!\n\n👤 *நம்பர்:* ${sender.split('@')[0]}\n💬 *மெசேஜ்:* "${text}"\n\nஉடனடியாக நீங்கள் இவருக்கு நேரடியாக மேனுவலாகப் பதிலளிக்கலாம்.` :
                 `⚠️ *Alert:* Irrelevant query received from a customer!\n\n👤 *Number:* ${sender.split('@')[0]}\n💬 *Message:* "${text}"\n\nPlease reply to this customer manually.`;
 
+            // Admin Number (9976245000)-ku notification anuppum
             await sock.sendMessage(ADMIN_NUMBER, { text: notifyText });
 
             const replyText = isTamil ?
